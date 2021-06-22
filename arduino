@@ -1,0 +1,118 @@
+//Include SD card and PCM/WAV Audio playback library
+#include <SD.h>                   
+#include <TMRpcm.h>     
+
+//Rename library
+TMRpcm audio;
+
+//SD card pin
+#define SD_ChipSelectPin 4         
+
+//Ultrasonic sensor
+const int echoPin = 6;
+const int trigPin = 7;
+
+//Potentiometer
+int sensorPin = A0;
+int sensorValue = 0;
+
+//Array with the audio files
+char *turtleLines[] = {"0.wav", "1.wav", "2.wav", "3.wav", "4.wav", "5.wav", "6.wav", "7.wav", "8.wav", "9.wav", "10.wav", "11.wav", "12.wav", "13.wav", "14.wav", "15.wav", "16.wav", "17.wav", "18.wav", "19.wav", "20.wav", "21.wav", "22.wav", "23.wav", "24.wav", "25.wav", "26.wav", "27.wav", "28.wav", "29.wav", "30.wav", "31.wav"};
+int i = 0;
+
+bool turnPotmeter = false;
+
+void setup(){
+  //Ultrasonic sensor
+  pinMode(sensorPin, INPUT);
+
+  //LED eyes
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  
+  //Speaker  pin
+  audio.speakerPin = 9;
+  
+  //Baud rate            
+  Serial.begin(9600);     
+
+  //Pin modes
+  pinMode(echoPin, INPUT);
+  pinMode(trigPin, OUTPUT);
+
+  //Error message
+  if (!SD.begin(SD_ChipSelectPin)) {      
+    Serial.println("You fail.");
+    return;                              
+  }
+}
+
+void loop(){
+  //Read value of potmeter
+  sensorValue = analogRead(sensorPin);
+  Serial.print("Potmeter: ");
+  Serial.print(sensorValue);
+  Serial.print('\n');
+  delay(100);
+  
+  //Send a pulse from ultrasonic sensor
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, LOW);
+
+  //Wait for the echo to return
+  long duration = pulseIn(echoPin, HIGH);
+  //Measure the distance
+  int cm = duration / 29 / 2;
+  //Print the distance
+  Serial.print("Distance: ");
+  Serial.print(cm);
+  Serial.print('\n');
+  delay(100);
+
+
+  if(sensorValue < 500){ 
+    turnPotmeter = false;
+    audio.pause();
+   }
+   else{
+    turnPotmeter = true;
+    audio.setVolume(5);   
+    audio.play("32.wav");
+    delay(3000);
+    audio.play("33.wav");
+    delay(10000);
+   }
+   
+  //Repeat the audio files
+  if(i > 31){
+    i = 1;
+  }
+
+  else{
+    //Play audio and turn on eyes if there is an object within 20cm of the turtle
+    if(cm < 50){
+      digitalWrite(2, HIGH);
+      digitalWrite(3, HIGH);
+      audio.setVolume(5);   
+      audio.play(turtleLines[i]);
+      i++;
+      delay(3000);
+      digitalWrite(2, LOW);
+      digitalWrite(3, LOW);
+      delay(3000);
+    }
+    //Audio pauses and eyes turn off when there is no obect nearby
+    else{
+      audio.pause();
+      digitalWrite(2, LOW);
+      digitalWrite(3, LOW);
+    }
+  }
+  
+  
+
+  
+}
